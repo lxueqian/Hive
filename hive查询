@@ -1,0 +1,18 @@
+1.尽量不要用*
+2.列别名 可以不加as
+3.算术运算符 select sal+1 from table
+4.常用函数：5个，一定会触发mapreduce任务 count min max sum avg
+5.between and
+  like  %：多个字符 _：一个字符
+  rlike 可以接java中的正则表达试
+6.where后不能写聚合函数，having可以，和group by连用
+7.join语句只能支持等值连接，不支持非等值连接；支持全外连接 full join；on后面不支持or
+8. 使用表名前缀可以提高效率
+9. hive建表建宽表较好，可以减少计算需求，因为join效率比较低
+10. 笛卡儿积 省略连接条件 相当于两个表行数相×
+11. order by 全局排序 一个reducer；也可以按照别名排序；多个列排序
+12. 每个mapreduce内部排序：sort by
+    设置reduce个数：set mapreduce.job.reduce=3；
+    查看recude个数：set mapreduce.job.reduces;
+    将查询结果导入文件中 ： insert overwrite local directory '/path' select * from emp sort by deptno desc;
+
