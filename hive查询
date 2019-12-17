@@ -11,8 +11,23 @@
 9. hive建表建宽表较好，可以减少计算需求，因为join效率比较低
 10. 笛卡儿积 省略连接条件 相当于两个表行数相×
 11. order by 全局排序 一个reducer；也可以按照别名排序；多个列排序
-12. 每个mapreduce内部排序：sort by
+12. 每个mapreduce内部排序：sort by 每个区的数据是随机算法得到的（防止数据倾斜）
     设置reduce个数：set mapreduce.job.reduce=3；
     查看recude个数：set mapreduce.job.reduces;
     将查询结果导入文件中 ： insert overwrite local directory '/path' select * from emp sort by deptno desc;
-
+13. 如果没有写local，需要在hadoop fs -cat /path 找到相应文件
+14. 分区排序：distribute by 结合sort by使用，写在sort by之前 分区内的数据按照指定字段哈希分区
+    与sort by类似，只有设置多个reduce才能看出效果
+    > set mapreduce.job.reduces=3;
+    > insert overwrite local directory '/opt/.../distribute-result' select * from emp 
+    > distribute by deptno sort by empno desc; 每个部门按照工资排序，并保存结果至...
+15. 分区排序：cluster by --distribute by和sort by 后面的字段相同
+    对于50各部门但是只有3个分区的情况比较有用；只能升序排，没有 asc或者desc
+16. 分桶及抽样排序
+    分区针对数据存储路径(多个文件夹），分桶针对的是数据文件（同一个文件夹多个文件）
+    分区是针对新字段；分桶针对已有字段
+    1）先创建分桶表，通过直接导入数据文件的方式
+    > create table stu buck(id int, name string)
+    > clustered by(id)
+    > into 4 buckets
+    
