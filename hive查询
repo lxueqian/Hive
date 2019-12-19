@@ -30,4 +30,75 @@
     > create table stu buck(id int, name string)
     > clustered by(id)
     > into 4 buckets
+    > row format delimited fields terminated by '\t';
+    
+    > desc formatted stu_buck;
+    > load data local inpath '/path..' into table stu_back;
+    > trancate table 名
+    > alter table name drop partition(key=value),partition(key=value),....
+    结果没有分桶
+    2）先创建一个普通表，然后通过子查询的方法将数据导入分桶表
+    需要设置一个属性：set hive.enforce.bucketing=true; set mapreduce.job.reduces=-1;
+    再插入数据 insert into table stu_back select id,name from stu;
+    
+    > select * from stu_buck tablesample(bucket 1 out of 4 on id);
+    tablesample(bucket x out of y) y必须是table总桶数的因子或者倍数，决定抽样比例；
+    x表示从哪个bucket开始抽取，如果需要抽取多个分区，以后的分区号为当前加上y
+    x必须小于y
+17. date_format('2019-12-13','yyyy-MM-dd HH:mm:ss')
+    date_add('2019-12-13',5/-5)
+    date_sub()
+    datediff('2019-12-13','2019-12-14')
+    regexp_replace('2019/12/13','/','-') 替换
+18. > select concat(deptno,'-',dname) from table; 多列合成一列  合并一行的数据 把多个字段拼成一个
+    > select concat_ws('-',field1,field2,...) 必须是string类型field1-field2-field3
+    > select collect_set(field)  把该字段的值去重变成一个array 把多行合成一行 是一个聚合函数 需要和group by连用
+    > concat_ws('|',collect_set(ti.name)) name group by 把一组的数据化成一行
+    > explode(字段） 把字段中每个值拆成多行
+    > select movie,category from movie_info lateral view explode(category) table_name as category_name
+    把拆分出来的多行与原来的表关联起来
+19. 窗口函数
+    把原数据和聚合后的数据一起展示--group做不到
+20. 优化方式
+    1）fetch抓取： 全局查找、字段查找、limit查找不走mapreduce 需要设置hive.fetch.task.conversion=more
+    2) 本地模式：set hive.exec.mode.local.auto=true, 当输入文件数小于4个，大小小于128M
+    3）小表 join 大表： set hive.auto.convert.join = true 会自动对大小表的join做调整
+    4）大表 join 大表： 
+      空key过滤：
+      空key转换：空key的数据很多，但是不能过滤，若不操作会导致数据倾斜，因为同一个key的数据会发给一个reducer，所以可以
+      给空key赋随机值
+      从输出网址中查看是否出现数据倾斜 
+      case when n.id is null then concat('hive',rand()) else n.id end 降低数据倾斜，但是总体时间会变慢
+    5）mapjoin：set hive.auto.convert.join = true; set hive.mapjoin.smalltable.filesize=250000000(大小表的阈值设置25M）
+      可以用mapjoin把小表全部加载到内存在map端进行join，避免reducer操作
+    6）group by: 可以开启map端进行聚合 hive.map.aggr = true; 
+                 在map端进行聚合的条目 hive.groupby.mapaggr.checkinterval=100000
+                 有数据倾斜的时候进行负载均衡 hive.groupby.skewindata=true：会生成两个MR任务，第一个MR任务中Map的输出结果
+                 会随机分到reduce中，每个reduce部分聚合并输出结果，但是想通过key的可能被分到不同reduce中，然后再进入第二个
+                 MR任务完成最终聚合
+    7）count(distinct) 需要一个reduce完成，需要处理的量比较大，一般先用group by在count的方式
+       select count(id) from (select id from table group by id)
+    8) 避免笛卡儿积：join必须加有效的on,hive只能用一个reducer完成笛卡儿积
+    9）行列过滤：只拿需要的列；连表先写where条件
+    10）动态分区调整： 
+        insert into table dept_par partition(deptno) --这里不指定分区名就是动态分区，指定就是静态分区
+        select loc,name,deptno from dept; 分区字段根据最后一个select字段决定
+    11）分区/分桶
+    12）map前将小文件合并 参数已经默认设置
+        复杂文件增加map数量
+        调整reducer数量  set mapreduce,hob.reduces = 15; 若为-1根据输入的原始数据量/256得到
+        hive.exec.reducers.max = 1009最大的reducer数量
+21. hadoop压缩
+    set hive.exec.compress.intermediate=true; hive中间传输数据压缩功能
+    set mapreduce.map.output.compress = true; map端输出压缩功能
+    set mapreduce.map.output.compress.codec = org.apache.hadoop.io.compress.SnappyCodec;
+    set hive.exec.compress.output=true; hive最终输出数据压缩功能
+22. 行存储和列存储 select * select column
+23. hive存入数据：load/insert put(修复数据/增加分区）
+24. hive会把一个查询转化为多个阶段（mr阶段、抽样阶段、合并阶段、limit阶段),默认会一次执行一个阶段，但是有些可以并行；
+    并行执行：set hive.exec.parallel=true； set hive.exeu.parallel.thread.number = 16;同一个sql允许的最大并行度
+25. SerDe 允许Hive 从table 读取数据，并以任何自定义格式将其写回HDFS
+26. Hive是基于Hadoop的一个数据仓库工具，可以将结构化的数据文件映射为一张表，并提供类SQL查询功能
+27. 可以使用explain命令，查看语法树，即hive先将sql语法转成对应的语法树 还可以使用explain extended 查看更多信息
+28. 
     
