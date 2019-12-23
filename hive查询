@@ -78,9 +78,17 @@
                  MR任务完成最终聚合
     7）count(distinct) 需要一个reduce完成，需要处理的量比较大，一般先用group by在count的方式
        select count(id) from (select id from table group by id)
+       实际中
+       ,count(distinct u) as user_pv -- 曝光用户量
+        ,count(distinct qpid) as video_pv -- 内容曝光个数
+        ,count(1) as pv -- 内容曝光次数
+        ,count(1)/count(distinct u) as avg_pv -- 人均曝光次数
+        这样直接写有时也可以，如果不行再调整
     8) 避免笛卡儿积：join必须加有效的on,hive只能用一个reducer完成笛卡儿积
     9）行列过滤：只拿需要的列；连表先写where条件
     10）动态分区调整： 
+        set hive.exec.dynamic.partition=true;
+        set hive.exec.dynamic.partition.mode=nonstrict;  --启用动态分区
         insert into table dept_par partition(deptno) --这里不指定分区名就是动态分区，指定就是静态分区
         select loc,name,deptno from dept; 分区字段根据最后一个select字段决定
     11）分区/分桶
@@ -100,5 +108,30 @@
 25. SerDe 允许Hive 从table 读取数据，并以任何自定义格式将其写回HDFS
 26. Hive是基于Hadoop的一个数据仓库工具，可以将结构化的数据文件映射为一张表，并提供类SQL查询功能
 27. 可以使用explain命令，查看语法树，即hive先将sql语法转成对应的语法树 还可以使用explain extended 查看更多信息
-28. 
-    
+28. COALESCE ( expression,value1,value2……,valuen) 
+    COALESCE()函数的第一个参数expression为待检测的表达式，而其后的参数个数不定。
+    COALESCE()函数将会返回包括expression在内的所有参数中的第一个非空表达式。
+    COALESCE()函数可以用来完成几乎所有的空值处理，不过在很多数据库系统中都提供了它的简化版，这些简化版中只接受两个变量，其参数格式如下： 
+    MYSQL: 
+      IFNULL(expression,value) 
+    MSSQLServer: 
+      ISNULL(expression,value) 
+    Oracle: 
+      NVL(expression,value) 
+29. UDF(User-Defined-Function)，用户自定义函数对数据进行处理。  单独处理一行，输出也是以行输出。Hive内置字符串，数学函数，时间函数都是
+       这种类型。大多数情况下编写对应功能的处理函数就能满足需求。如：concat, split, length ,rand等。
+       这种UDF主要有两种写法：继承实现UDF类和继承GenericUDF类（通用UDF）
+    UDTF(User-Defined Table-Generating Functions) 用来解决输入一行输出多行(On-to-many maping) 的需求。
+       一般配合group by使用。主要用于累加操作，常见的函数有max， min， count， sum，collect_set
+       这种UDF主要有两种写法：继承实现 UDAF类和继承实现AbstractGenericUDAFResolver类。
+    UDAF(User Defined Aggregation Function)用户自定义聚合函数，操作多个数据行，产生一个数据行。
+       如explode, 通常配合Lateral View使用，实现列转行的功能。parse_url_tuple将一列转为多列
+       
+  UDF函数可以直接应用于select语句，对查询结构做格式化处理后，再输出内容。
+  编写UDF函数的时候需要注意一下几点：
+    a）自定义UDF需要继承org.apache.hadoop.hive.ql.UDF。
+    b）需要实现evaluate函。
+    c）evaluate函数支持重载。
+30. 查看hive自有函数：
+  show functions --查看已有函数 describe function concat -- 查看函数用法 describe function extended concat -- 查看函数的用户和示例
+31. 
