@@ -134,4 +134,15 @@
     c）evaluate函数支持重载。
 30. 查看hive自有函数：
   show functions --查看已有函数 describe function concat -- 查看函数用法 describe function extended concat -- 查看函数的用户和示例
-31. 
+31. 字符串函数
+  LENGTH( string str ) 长度
+  TRIM( string str ) 去除空格
+  UPPER( string str ), UCASE( string str ) 
+  SUBSTR( string source_str, int start_position [,int length]  ) 返回字符串的一部分
+  SUBSTRING( string source_str, int start_position [,int length]  ) SUBSTR('hadoop',4) returns 'oop'  SUBSTR('hadoop',4,2) returns 'oo'
+  SPLIT( string str, string pat )和python一样分割字符串   SPLIT('hive:hadoop',':') returns ["hive","hadoop"]
+  LPAD( string str, int len, string pad ) 用指定字符串在左侧填充到指定长度
+  FIND_IN_SET( string search_string, string source_string_list ) 返回目标字符串位置
+  CONCAT( string str1, string str2... ) 链接字符串
+  CONCAT_WS( string delimiter, string str1, string str2... )  用第一个字符链接后面所有字符串
+  
