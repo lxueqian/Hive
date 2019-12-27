@@ -121,11 +121,13 @@
 29. UDF(User-Defined-Function)，用户自定义函数对数据进行处理。  单独处理一行，输出也是以行输出。Hive内置字符串，数学函数，时间函数都是
        这种类型。大多数情况下编写对应功能的处理函数就能满足需求。如：concat, split, length ,rand等。
        这种UDF主要有两种写法：继承实现UDF类和继承GenericUDF类（通用UDF）
+       
     UDTF(User-Defined Table-Generating Functions) 用来解决输入一行输出多行(On-to-many maping) 的需求。
+       如explode, 通常配合Lateral View使用，实现列转行的功能。parse_url_tuple将一列转为多列
+       
+    UDAF(User Defined Aggregation Function)用户自定义聚合函数，操作多个数据行，产生一个数据行。
        一般配合group by使用。主要用于累加操作，常见的函数有max， min， count， sum，collect_set
        这种UDF主要有两种写法：继承实现 UDAF类和继承实现AbstractGenericUDAFResolver类。
-    UDAF(User Defined Aggregation Function)用户自定义聚合函数，操作多个数据行，产生一个数据行。
-       如explode, 通常配合Lateral View使用，实现列转行的功能。parse_url_tuple将一列转为多列
        
   UDF函数可以直接应用于select语句，对查询结构做格式化处理后，再输出内容。
   编写UDF函数的时候需要注意一下几点：
