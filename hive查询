@@ -118,22 +118,36 @@
       ISNULL(expression,value) 
     Oracle: 
       NVL(expression,value) 
-29. UDF(User-Defined-Function)，用户自定义函数对数据进行处理。  单独处理一行，输出也是以行输出。Hive内置字符串，数学函数，时间函数都是
+29. UDF(User-Defined-Function)，一对一。Hive内置字符串，数学函数，时间函数都是
        这种类型。大多数情况下编写对应功能的处理函数就能满足需求。如：concat, split, length ,rand等。
        这种UDF主要有两种写法：继承实现UDF类和继承GenericUDF类（通用UDF）
        
-    UDTF(User-Defined Table-Generating Functions) 用来解决输入一行输出多行(On-to-many maping) 的需求。
+    UDTF(User-Defined Table-Generating Functions) 一对多。
        如explode, 通常配合Lateral View使用，实现列转行的功能。parse_url_tuple将一列转为多列
        
-    UDAF(User Defined Aggregation Function)用户自定义聚合函数，操作多个数据行，产生一个数据行。
+    UDAF(User Defined Aggregation Function)多对一。
        一般配合group by使用。主要用于累加操作，常见的函数有max， min， count， sum，collect_set
        这种UDF主要有两种写法：继承实现 UDAF类和继承实现AbstractGenericUDAFResolver类。
        
   UDF函数可以直接应用于select语句，对查询结构做格式化处理后，再输出内容。
   编写UDF函数的时候需要注意一下几点：
     a）自定义UDF需要继承org.apache.hadoop.hive.ql.UDF。
-    b）需要实现evaluate函。
+    b）需要实现evaluate函。 函数名只能使用evaluate
     c）evaluate函数支持重载。
+    4）在hive命令行创建函数 添加jar--add jar path 创建function--create [temporary] function add5 as '全类名'
+    5）在hive删除函数
+ 
+ UDTF函数
+    1）需要继承GenericUDTF类
+    2）需要实现三种方法
+        @override 表示子类重写了父类的方法 
+        inistialize 初始化方法 数据类型与sql不同 输出数据的列名/输出数据的类型定义
+        process 业务逻辑：获取数据-获取分隔符-遍历写出-将数据放在集合中-写出forward(datalist)
+        close
+    3）打成jar包上传
+    4）将jar包添加到hive的class path下
+    5）创建临时函数与开发好的javaclass关联 
+
 30. 查看hive自有函数：
   show functions --查看已有函数 describe function concat -- 查看函数用法 describe function extended concat -- 查看函数的用户和示例
 31. 字符串函数
@@ -147,4 +161,57 @@
   FIND_IN_SET( string search_string, string source_string_list ) 返回目标字符串位置
   CONCAT( string str1, string str2... ) 链接字符串
   CONCAT_WS( string delimiter, string str1, string str2... )  用第一个字符链接后面所有字符串
+32. 窗口函数
+  over() 给每条每条每条数据都开窗，限定一个聚合函数的作用范围 
+    group by 后面才执行窗口函数
+    group by只能多对一，无法给每条数据都产生一个结果
+    sum() over(distribute by cost sort by orderdate) 按人按日期据累加
+    over()其他限制窗口大小的函数————current row当前行 row between  and  current row
+    查看每个人的购买总量 select name,orderdate,cost,sum(cost) over(distribute by name sort by orderdate)
+    查看每个人上次购买时间 select name,orderdate,cost,lag(orderdate,1,'1970-01-01') over(distribute by name sort by orderdate)
+    lead(field,n,default) 后n行的某个数据
+    利用lag可以计算两天连续买的人
+    ntile(n) 把所有数据行平均分组  
+    查看前20% 时间的订单信息 select ntile_5 from (
+    select name,cost,orderdate,ntile(5) over(order by orderdate) ntile_5 from business) where ntile_5=1;
+  over前面
+    rank() 排序相同会重复，总数不变 并列第一，没有第二了
+    row_number() 没有并列
+    dense_rank() 排序相同会重复，总数会减少，并列第一有第二
+ 33. hive命令行中可以执行hadoop的命令 dfs
+ 34. hive数据仓库位置： hdfs上：/user/hive/warehouse
+     hive-site.xml conf文件夹下面
+     hive-default.xml
+     -hiveconf param=value 优先级最高
+ 35. hive数据类型：bigint double string int map<string,int> struct<street:string,city:string> array<string>
+ 36. DDL 库和表的增删改查
+    1）内外部表
+       内部表（管理表）--元数据(mysql中） 能被删除
+       外部表--实际数据（hdfs)不能被删除
+       转化：> desc formatted student; 查询表类型
+             > alter table student set tblproperties('EXTERNAL'='TRUE'/'FALSE'); 区分大小写
+    2）create [external] table [if not exists] tablename [(col type,...)] 
+       partitioned by (col type,..)
+       row format row_format（默认是SerDe-序列化反序列化)(delimited fileds terminated by char)
+       location path (指定表在hdfs的存储位置）
+       
+       外部表，仅仅记录数据所在路径，不对数据进行转移 元数据被删除实际数据不动
+       内部表，会将数据转移到数据仓库指定路径， 元数据和实际数据一起删除
+       
+ 37. DML 数据操作语言：数据导入/导出
+     本地插入：load data [local本地/hdfs] inpath 'path' [overwrite覆盖] into table haha; 
+     通过查询插入：insert overwrite/into(覆盖/不覆盖） table student partition (dt=) select... insert overwrite ...(可连多个）
+     查询创建表并加载数据：create table if not exists student as select name,score from student0; 
+     创建表通过location指定加载数据位置：create table tablename() location 'hadoop path';
+     import数据到指定hive表：只能对先export的数据导出的
+ 38.数据导出：
+    insert导出： insert overwrite [local] directory 'path' row format delimited fields terminated by '\t' 
+    导出到本地： hive -e '' > path
+ 39.trancate 清空表，只能清空管理表
+     
+     
+     
+     
+ 
+  
   
