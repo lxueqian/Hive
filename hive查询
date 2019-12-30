@@ -1,12 +1,12 @@
-1.尽量不要用*
-2.列别名 可以不加as
-3.算术运算符 select sal+1 from table
-4.常用函数：5个，一定会触发mapreduce任务 count min max sum avg
-5.between and
-  like  %：多个字符 _：一个字符
-  rlike 可以接java中的正则表达试
-6.where后不能写聚合函数，having可以，和group by连用
-7.join语句只能支持等值连接，不支持非等值连接；支持全外连接 full join；on后面不支持or
+1. 尽量不要用*
+2. 列别名 可以不加as
+3. 算术运算符 select sal+1 from table
+4. 常用函数：5个，一定会触发mapreduce任务 count min max sum avg
+5. between and
+   like  %：多个字符 _：一个字符
+   rlike 可以接java中的正则表达试
+6. where后不能写聚合函数，having可以，和group by连用
+7. join语句只能支持等值连接，不支持非等值连接；支持全外连接 full join；on后面不支持or
 8. 使用表名前缀可以提高效率
 9. hive建表建宽表较好，可以减少计算需求，因为join效率比较低
 10. 笛卡儿积 省略连接条件 相当于两个表行数相×
@@ -57,8 +57,12 @@
     > explode(字段） 把字段中每个值拆成多行
     > select movie,category from movie_info lateral view explode(category) table_name as category_name
     把拆分出来的多行与原来的表关联起来
-19. 窗口函数
-    把原数据和聚合后的数据一起展示--group做不到
+19. hive架构
+    元数据 存在mysql中
+    原始数据 存在HDFS中
+    解析器、编译器、优化器、执行器
+    本质：将HQL转化成Mapreduce程序
+    mysql安装是服务级别的安装，在root下安装
 20. 优化方式
     1）fetch抓取： 全局查找、字段查找、limit查找不走mapreduce 需要设置hive.fetch.task.conversion=more
     2) 本地模式：set hive.exec.mode.local.auto=true, 当输入文件数小于4个，大小小于128M
@@ -179,35 +183,67 @@
     row_number() 没有并列
     dense_rank() 排序相同会重复，总数会减少，并列第一有第二
  33. hive命令行中可以执行hadoop的命令 dfs
- 34. hive数据仓库位置： hdfs上：/user/hive/warehouse
+ 34. hive数据仓库默认位置： hdfs上：/user/hive/warehouse
      hive-site.xml conf文件夹下面
      hive-default.xml
      -hiveconf param=value 优先级最高
  35. hive数据类型：bigint double string int map<string,int> struct<street:string,city:string> array<string>
- 36. DDL 库和表的增删改查
+ 36. DDL 库和表的增删改查 --操作元数据
     1）内外部表
        内部表（管理表）--元数据(mysql中） 能被删除
        外部表--实际数据（hdfs)不能被删除
        转化：> desc formatted student; 查询表类型
              > alter table student set tblproperties('EXTERNAL'='TRUE'/'FALSE'); 区分大小写
-    2）create [external] table [if not exists] tablename [(col type,...)] 
+    2）建表
+       create [external] table [if not exists] tablename [(col type,...)] 
        partitioned by (col type,..)
        row format row_format（默认是SerDe-序列化反序列化)(delimited fileds terminated by char)
        location path (指定表在hdfs的存储位置）
        
        外部表，仅仅记录数据所在路径，不对数据进行转移 元数据被删除实际数据不动
        内部表，会将数据转移到数据仓库指定路径， 元数据和实际数据一起删除
+     3) 修改表
+        alter table tblname change column oldname newname type; 改变原有列名或属性
+        alter table tblname replace column (newname type); 只能替换所有列
+        alter table tblname add columns (col type,col typ...); 增加列，在所有列的后面（partition列前）
+        update tblname set col='' [where]
+     4）删除表
+        trancate 清空表，只能清空管理表
        
- 37. DML 数据操作语言：数据导入/导出
+ 37. DML 数据操作语言：数据导入/导出 --操作实际数据
      本地插入：load data [local本地/hdfs] inpath 'path' [overwrite覆盖] into table haha; 
      通过查询插入：insert overwrite/into(覆盖/不覆盖） table student partition (dt=) select... insert overwrite ...(可连多个）
      查询创建表并加载数据：create table if not exists student as select name,score from student0; 
      创建表通过location指定加载数据位置：create table tablename() location 'hadoop path';
      import数据到指定hive表：只能对先export的数据导出的
+     
  38.数据导出：
     insert导出： insert overwrite [local] directory 'path' row format delimited fields terminated by '\t' 
     导出到本地： hive -e '' > path
  39.trancate 清空表，只能清空管理表
+ 40.分区表：
+    对应一个HDFS文件系统上独立的文件夹，文件夹下面是该分区的所有数据文件
+    Hive分区就是分目录
+    谓词下推：先走where再选择
+    > alter table tblname add partition(dt='2019-12-12') partition(dt='2019-12-14')
+    > alter table tblname drop partition(dt=''),partition(dt='');
+    > show partitions tblname;
+    > desc formatted tblname
+    
+    二级分区：
+    partitioned by (col type1,col2 type2);
+    三种上传数据添加分区的方式：
+    1）上传后修复： > dfs -mkdir -p path 建立文件夹
+                   > dfs -put source target 添加原始数据
+                   > msck repair table tblname; 添加元数据信息
+    2) 上传后添加分区：前两步同上
+                   > alter table tblname add partition(); 添加分区
+    3）创建文件夹后load数据到分区：
+                    > load data local inpath  into table tblname partition();
+    4) 建立一个分区表，然后直接insert数据到分区：
+                    > insert overwrite table tblname partition(dt='') select...;
+                    
+  
      
      
      
