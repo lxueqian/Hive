@@ -208,8 +208,9 @@
         alter table tblname add columns (col type,col typ...); 增加列，在所有列的后面（partition列前）
         update tblname set col='' [where]
      4）删除表
-        trancate 清空表，只能清空管理表
-       
+        truncate table tblname，只能清空管理表--清空表数据
+        drop tabel tblname (同mysql) 删除表结构
+           
  37. DML 数据操作语言：数据导入/导出 --操作实际数据
      本地插入：load data [local本地/hdfs] inpath 'path' [overwrite覆盖] into table haha; 
      通过查询插入：insert overwrite/into(覆盖/不覆盖） table student partition (dt=) select... insert overwrite ...(可连多个）
@@ -217,10 +218,13 @@
      创建表通过location指定加载数据位置：create table tablename() location 'hadoop path';
      import数据到指定hive表：只能对先export的数据导出的
      
+     插入 静态分区 select后不能加分区字段
+          动态分区 select后需要加分区字段，必须保证是最后一个
+
  38.数据导出：
     insert导出： insert overwrite [local] directory 'path' row format delimited fields terminated by '\t' 
     导出到本地： hive -e '' > path
- 39.trancate 清空表，只能清空管理表
+ 39.truncate 清空表，只能清空管理表
  40.分区表：
     对应一个HDFS文件系统上独立的文件夹，文件夹下面是该分区的所有数据文件
     Hive分区就是分目录
