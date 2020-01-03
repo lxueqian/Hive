@@ -7,6 +7,10 @@
    rlike 可以接java中的正则表达试
 6. where后不能写聚合函数，having可以，和group by连用
 7. join语句只能支持等值连接，不支持非等值连接；支持全外连接 full join；on后面不支持or
+   left semi join 是in/exists子查询的实现方式，子句右边的表只能在on子句设置过滤条件；只能显示左表字段
+   相当于select * from A where A.key in (select B.key from B)
+   select * from A left semi join B on (A.key=B.key)
+   
 8. 使用表名前缀可以提高效率
 9. hive建表建宽表较好，可以减少计算需求，因为join效率比较低
 10. 笛卡儿积 省略连接条件 相当于两个表行数相×
@@ -246,8 +250,15 @@
                     > load data local inpath  into table tblname partition();
     4) 建立一个分区表，然后直接insert数据到分区：
                     > insert overwrite table tblname partition(dt='') select...;
-                    
-  
+41. 分位数
+    将改组数据排序以后用小于等于该数的个数/总的数字的个数
+    percentile(col,p) 只能对整数列求,p表示第p百分位数（一组n个观测值按数值大小排列。如，处于p%位置的值称第p百分位数）
+    percentile_approx(col,array(p1,p2,p3..),B)
+    95th percentile百分点指的是所给数集中超过其95%的数
+    中位数是第50百分位数
+    第25百分位数又称第一个四分位数（First Quartile），用Q1表示；
+    第50百分位数又称第二个四分位数（Second Quartile），用Q2表示；
+    第75百分位数又称第三个四分位数（Third Quartile）,用Q3表示
      
      
      
