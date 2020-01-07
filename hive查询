@@ -264,8 +264,21 @@
     第25百分位数又称第一个四分位数（First Quartile），用Q1表示；
     第50百分位数又称第二个四分位数（Second Quartile），用Q2表示；
     第75百分位数又称第三个四分位数（Third Quartile）,用Q3表示
-     
-     
+
+42. 计算次留：一是每天算7天的，更改这7天的数据,分区要设置成不严格的
+              二是存一张remain的表，然后存一个days 和 from_date
+              
+43. 这种方法可以使得在计算的时候同时统计每一类的值和总计，也可以使用grouping sets或者with cube
+   from (
+        select A.*,'ALL' as ab
+        from user_detail_mix A 
+
+        union all
+        select A.*,B.ab as ab
+        from user_detail_mix A 
+        join qube_base_pps_d_user_ab_tag_tbl B on B.dt='${dt_1}' and B.u=A.u
+    ) A
+    group by user_type,platform,ab,channelname
      
      
  
