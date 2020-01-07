@@ -54,6 +54,11 @@
     date_sub()
     datediff('2019-12-13','2019-12-14')
     regexp_replace('2019/12/13','/','-') 替换
+    
+    时间比较大小：
+    if(cast(date as string)>cast(date2 as string),1,0)
+    unix_timestamp(date)-unix_timestamp(date2) 大于0表示date比date2大
+    
 18. > select concat(deptno,'-',dname) from table; 多列合成一列  合并一行的数据 把多个字段拼成一个
     > select concat_ws('-',field1,field2,...) 必须是string类型field1-field2-field3
     > select collect_set(field)  把该字段的值去重变成一个array 把多行合成一行 是一个聚合函数 需要和group by连用
