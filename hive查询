@@ -64,6 +64,7 @@
     > select collect_set(field)  把该字段的值去重变成一个array 把多行合成一行 是一个聚合函数 需要和group by连用
     > concat_ws('|',collect_set(ti.name)) name group by 把一组的数据化成一行
     > explode(字段） 把字段中每个值拆成多行
+    > wm_concat函数  一条信息分多条记录存储，并以同一个ID关联的情况 在数据查询时候，希望将所有信息一起展示 select wm_concat('',field) as xxx from xxx group by xxx
     > select movie,category from movie_info lateral view explode(category) table_name as category_name
     把拆分出来的多行与原来的表关联起来
 19. hive架构
@@ -332,3 +333,8 @@
    如果需要创建有分区的表，需要在create表的时候调用可选参数partitioned by，详见表创建的语法结构
    在 Hive 中，表中的一个 Partition 对应于表下的一个目录，所有的 Partition 的数据都存储在最字集的目录中
   
+48. sql的null值
+   null是一种未知的类型,用常规比较操作符没有意义
+   null值在排序时候会被认为是最大的
+   count计算是空字符串会被计算,null不会
+   NULL(数据库)==None(python)==NAN(pandas)
