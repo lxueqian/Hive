@@ -176,7 +176,7 @@
   CONCAT( string str1, string str2... ) 链接字符串
   CONCAT_WS( string delimiter, string str1, string str2... )  用第一个字符链接后面所有字符串
 32. 窗口函数
-  over() 给每条每条每条数据都开窗，限定一个聚合函数的作用范围 
+  over() 给每条数据都开窗，限定一个聚合函数的作用范围 
     group by 后面才执行窗口函数
     group by只能多对一，无法给每条数据都产生一个结果
     sum() over(distribute by cost sort by orderdate) 按人按日期据累加
@@ -260,7 +260,7 @@
     4) 建立一个分区表，然后直接insert数据到分区：
                     > insert overwrite table tblname partition(dt='') select...;
 41. 分位数
-    将改组数据排序以后用小于等于该数的个数/总的数字的个数
+    将该组数据排序以后用小于等于该数的个数/总的数字的个数
     percentile(col,p) 只能对整数列求,p表示第p百分位数（一组n个观测值按数值大小排列。如，处于p%位置的值称第p百分位数）
     percentile_approx(col,array(p1,p2,p3..),B)
     95th percentile百分点指的是所给数集中超过其95%的数
@@ -280,7 +280,7 @@
         union all
         select A.*,B.ab as ab
         from user_detail_mix A 
-        join qube_base_pps_d_user_ab_tag_tbl B on B.dt='${dt_1}' and B.u=A.u
+        join d_user_ab_tag_tbl B on B.dt='${dt_1}' and B.u=A.u
     ) A
     group by user_type,platform,ab,channelname
 44. 把一个表从一个数据库复制到另一个数据库
